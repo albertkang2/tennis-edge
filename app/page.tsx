@@ -26,8 +26,14 @@ function formatStartTime(value: string | null): string {
 async function getMatches(): Promise<Match[]> {
   const h = headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const baseUrl = host ? `${proto}://${host}` : "http://localhost:3000";
+  const proto =
+    h.get("x-forwarded-proto") ??
+    (process.env.NODE_ENV === "production" ? "https" : "http");
+  const fallbackHost =
+    process.env.VERCEL_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, "") ??
+    "localhost:3000";
+  const baseUrl = `${proto}://${host ?? fallbackHost}`;
 
   const res = await fetch(`${baseUrl}/api/matches`, { cache: "no-store" });
   if (!res.ok) {

@@ -21,11 +21,6 @@ type OddsEventDto = {
   bookmakers?: Record<string, OddsMarket[]>;
 };
 
-type BookmakerDto = {
-  name?: string;
-  active?: boolean;
-};
-
 type MatchDto = {
   id: string;
   tournament: string | null;
