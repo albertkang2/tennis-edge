@@ -102,35 +102,42 @@ export async function GET() {
     eventsUrl.searchParams.set("limit", "50");
 
     const events = await fetchJson<EventDto[]>(eventsUrl);
-    const atpWtaEvents = events.filter(isAtpOrWta).slice(0, 10);
+    const atpWtaEvents = events.filter(isAtpOrWta);
+    const selectedEvents = (atpWtaEvents.length > 0 ? atpWtaEvents : events).slice(
+      0,
+      10
+    );
 
-    if (atpWtaEvents.length === 0) {
+    if (selectedEvents.length === 0) {
       return NextResponse.json([] satisfies MatchDto[]);
     }
 
-    const bookmakersUrl = new URL("bookmakers", apiBase);
-    bookmakersUrl.searchParams.set("apiKey", apiKey);
-    const bookmakers = await fetchJson<BookmakerDto[]>(bookmakersUrl);
-    const bookmakerNames = bookmakers
-      .filter((b) => b.name && b.active !== false)
-      .slice(0, 10)
-      .map((b) => b.name as string);
+    const allowedBookmakers = [
+      "BetMGM",
+      "DraftKings",
+      "FanDuel",
+      "GG.bet",
+      "Caesars",
+      "Betfair Exchange",
+      "10BET",
+      "Unibet",
+      "Stake",
+      "Bet365",
+    ];
 
     const oddsUrl = new URL("odds/multi", apiBase);
     oddsUrl.searchParams.set("apiKey", apiKey);
     oddsUrl.searchParams.set(
       "eventIds",
-      atpWtaEvents.map((e) => String(e.id)).join(",")
+      selectedEvents.map((e) => String(e.id)).join(",")
     );
-    if (bookmakerNames.length > 0) {
-      oddsUrl.searchParams.set("bookmakers", bookmakerNames.join(","));
-    }
+    oddsUrl.searchParams.set("bookmakers", allowedBookmakers.join(","));
 
     const oddsEvents = await fetchJson<OddsEventDto[]>(oddsUrl);
     const oddsById = new Map<number, OddsEventDto>();
     for (const event of oddsEvents) oddsById.set(event.id, event);
 
-    const matches: MatchDto[] = atpWtaEvents.map((event) => {
+    const matches: MatchDto[] = selectedEvents.map((event) => {
       const best = getBestMoneyline(oddsById.get(event.id)?.bookmakers);
       return {
         id: String(event.id),
