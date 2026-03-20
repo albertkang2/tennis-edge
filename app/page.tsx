@@ -1,14 +1,4 @@
-import { headers } from "next/headers";
-
-type Match = {
-  id: string;
-  tournament: string | null;
-  startTime: string | null;
-  player1: string;
-  player2: string;
-  player1Odds: number | null;
-  player2Odds: number | null;
-};
+import { loadMatches, type MatchRow } from "@/lib/matches";
 
 function formatStartTime(value: string | null): string {
   if (!value) return "—";
@@ -23,38 +13,10 @@ function formatStartTime(value: string | null): string {
   });
 }
 
-async function getMatches(): Promise<Match[]> {
-  const h = headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto =
-    h.get("x-forwarded-proto") ??
-    (process.env.NODE_ENV === "production" ? "https" : "http");
-  const fallbackHost =
-    process.env.VERCEL_URL ??
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, "") ??
-    "localhost:3000";
-  const baseUrl = `${proto}://${host ?? fallbackHost}`;
-
-  const res = await fetch(`${baseUrl}/api/matches`, { cache: "no-store" });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to load matches (${res.status}): ${text}`);
-  }
-  return (await res.json()) as Match[];
-}
-
 export default async function Home() {
-  let matches: Match[] = [];
-  let error: string | null = null;
-
-  try {
-    matches = await getMatches();
-  } catch (err) {
-    error =
-      err instanceof Error
-        ? err.message
-        : "Failed to load matches from /api/matches.";
-  }
+  const result = await loadMatches();
+  const matches: MatchRow[] = result.ok ? result.matches : [];
+  const error = result.ok ? null : result.error;
 
   return (
     <section className="space-y-4">

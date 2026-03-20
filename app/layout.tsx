@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
+import { ThemeToggle } from "./components/theme-toggle";
 import "./globals.css";
+
+const themeInitScript = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();`;
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -25,14 +29,20 @@ export default function RootLayout({
 }>) {
   const year = new Date().getFullYear();
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
+        <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors">
           <header className="border-b border-black/10 dark:border-white/10">
-            <div className="w-full px-4 py-4">
+            <div className="flex w-full items-center justify-between gap-4 px-4 py-4">
               <h1 className="text-lg font-semibold">Tennis Edge Explorer</h1>
+              <ThemeToggle />
             </div>
           </header>
 
